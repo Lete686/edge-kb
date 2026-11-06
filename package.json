@@ -1,0 +1,20 @@
+{
+  "name": "edge-kb",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "端侧 AI 推理性能优化与 seekdb 混合检索 —— 浏览器本地向量化 + seekdb hybridSearch 的迷你知识库",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "main": "server/index.mjs",
+  "scripts": {
+    "start": "node server/index.mjs",
+    "dev": "node --watch server/index.mjs"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "seekdb": "^1.4.0"
+  }
+}

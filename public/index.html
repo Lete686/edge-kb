@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Edge-KB · 端侧向量化 + seekdb 混合检索</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="logo">◈</span>
+        <div>
+          <h1>Edge-KB</h1>
+          <p class="subtitle">浏览器本地向量化 · seekdb 向量+全文混合检索</p>
+        </div>
+      </div>
+
+      <!-- 推理后端徽标：WebGPU / WASM 显著展示 -->
+      <div class="status-strip" role="status" aria-live="polite">
+        <div class="pill" id="pill-backend" title="推理后端（WebGPU 优先，不可用时自动降级 WASM）">
+          <span class="pill-label">推理后端</span>
+          <strong id="backend-value">未加载</strong>
+        </div>
+        <div class="pill" id="pill-dtype" title="模型量化精度">
+          <span class="pill-label">量化</span>
+          <strong id="dtype-value">—</strong>
+        </div>
+        <div class="pill" id="pill-model" title="浏览器端 embedding 模型">
+          <span class="pill-label">模型</span>
+          <strong id="model-value">Xenova/all-MiniLM-L6-v2</strong>
+        </div>
+        <div class="pill" id="pill-vector" title="向量维度">
+          <span class="pill-label">维度</span>
+          <strong id="dimension-value">384</strong>
+        </div>
+        <div class="pill" id="pill-db" title="seekdb 连接模式">
+          <span class="pill-label">seekdb</span>
+          <strong id="db-value">检查中…</strong>
+        </div>
+      </div>
+    </header>
+
+    <main class="layout">
+      <!-- ============================ 左栏：导入 ============================ -->
+      <section class="panel" id="panel-import">
+        <header class="panel-head">
+          <h2>1 · 语料导入</h2>
+          <span class="hint">文本在浏览器内向量化后写入 seekdb</span>
+        </header>
+
+        <div class="field">
+          <label for="corpus-text">粘贴文本（空行分隔多篇文档）</label>
+          <textarea
+            id="corpus-text"
+            rows="8"
+            placeholder="第一篇文章的正文……&#10;&#10;第二篇文章的正文……"
+          ></textarea>
+        </div>
+
+        <div class="row">
+          <div class="field grow">
+            <label for="corpus-file">或上传文件（.txt / .md，可多选）</label>
+            <input id="corpus-file" type="file" accept=".txt,.md,.markdown,text/plain,text/markdown" multiple />
+          </div>
+          <div class="field narrow">
+            <label for="embed-batch">向量化 batch</label>
+            <input id="embed-batch" type="number" min="1" max="64" step="1" value="8" />
+          </div>
+          <div class="field narrow">
+            <label for="write-batch">写入 batch</label>
+            <input id="write-batch" type="number" min="1" max="256" step="1" value="32" />
+          </div>
+        </div>
+
+        <div class="row actions">
+          <button id="btn-import" class="primary">向量化并导入</button>
+          <button id="btn-sample" class="ghost">加载示例语料</button>
+          <button id="btn-clear" class="ghost">清空输入</button>
+        </div>
+
+        <div class="progress-wrap" id="progress-wrap" hidden>
+          <div class="progress-track"><div class="progress-bar" id="progress-bar"></div></div>
+          <div class="progress-meta">
+            <span id="progress-label">准备中…</span>
+            <span id="progress-count">0 / 0</span>
+          </div>
+        </div>
+
+        <dl class="timings" id="import-timings">
+          <div><dt>模型加载</dt><dd id="t-model">—</dd></div>
+          <div><dt>向量化</dt><dd id="t-embed">—</dd></div>
+          <div><dt>写入 seekdb</dt><dd id="t-write">—</dd></div>
+          <div><dt>合计</dt><dd id="t-total">—</dd></div>
+        </dl>
+      </section>
+
+      <!-- ============================ 右栏：检索 ============================ -->
+      <section class="panel" id="panel-search">
+        <header class="panel-head">
+          <h2>2 · 检索</h2>
+          <span class="hint">向量 + 全文由 seekdb 的 RRF 融合</span>
+        </header>
+
+        <div class="collection-bar">
+          <div class="field grow">
+            <label for="collection-select">集合</label>
+            <select id="collection-select"></select>
+          </div>
+          <div class="field narrow">
+            <label for="n-results">TopK</label>
+            <input id="n-results" type="number" min="1" max="50" value="10" />
+          </div>
+          <button id="btn-refresh-collections" class="ghost small" title="刷新集合列表">刷新</button>
+          <button id="btn-reset-collection" class="danger small" title="删除并重建当前集合">重置集合</button>
+        </div>
+
+        <div class="row collection-create">
+          <div class="field grow">
+            <label for="new-collection">新建 / 切换集合</label>
+            <input id="new-collection" type="text" placeholder="例如 kb_demo（字母数字-_，最长 63）" />
+          </div>
+          <button id="btn-create-collection" class="ghost">新建/切换</button>
+        </div>
+
+        <div class="field">
+          <label for="query-input">查询</label>
+          <div class="query-row">
+            <input id="query-input" type="search" placeholder="输入自然语言问题或关键词…" />
+            <button id="btn-search" class="primary">检索</button>
+          </div>
+        </div>
+
+        <dl class="timings" id="search-timings">
+          <div><dt>查询向量化</dt><dd id="t-qembed">—</dd></div>
+          <div><dt>seekdb 混合检索</dt><dd id="t-query">—</dd></div>
+        </dl>
+
+        <div id="results" class="results" aria-live="polite">
+          <p class="empty">尚无结果。导入语料后输入查询开始检索。</p>
+        </div>
+      </section>
+
+      <!-- ======================== 量化对比评测 ======================== -->
+      <section class="panel compare-panel" id="panel-compare">
+        <header class="panel-head">
+          <h2>3 · 量化对比评测</h2>
+          <span class="hint">同一批语料下对比 q8（INT8）与 fp32 的体积、压缩比与召回</span>
+        </header>
+
+        <div class="row actions">
+          <button id="btn-compare" class="primary">量化对比评测</button>
+          <span class="hint">
+            两种配置都在浏览器内向量化并做余弦排序，不改动 seekdb 里的数据
+          </span>
+        </div>
+
+        <div id="compare-output" class="compare-output" aria-live="polite">
+          <p class="empty">尚未评测。点击「量化对比评测」跑一遍 q8 与 fp32。</p>
+        </div>
+      </section>
+
+      <!-- ============================ 日志 ============================ -->
+      <section class="panel log-panel" id="panel-log">
+        <header class="panel-head">
+          <h2>运行日志</h2>
+          <button id="btn-clear-log" class="ghost small">清空</button>
+        </header>
+        <pre id="log" class="log"></pre>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span>向量全程在浏览器计算，后端仅做校验与 seekdb 转发</span>
+      <span id="app-version" class="muted"></span>
+    </footer>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

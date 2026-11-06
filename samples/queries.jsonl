@@ -1,0 +1,12 @@
+{"id":"q01","query":"reciprocal rank fusion combine keyword and vector ranked lists","relevant":["d06","d19"]}
+{"id":"q02","query":"run seekdb embedded locally without starting a server","relevant":["d02","d01"]}
+{"id":"q03","query":"eight bit integer quantization shrink model size","relevant":["d11","d12"]}
+{"id":"q04","query":"browser GPU acceleration for transformer inference","relevant":["d10","d22"]}
+{"id":"q05","query":"evaluate retrieval quality with recall at five and ten","relevant":["d17"]}
+{"id":"q06","query":"splitting long documents into smaller chunks before embedding","relevant":["d18"]}
+{"id":"q07","query":"HNSW neighbour parameter memory and recall tradeoff","relevant":["d21","d03"]}
+{"id":"q08","query":"what embedding dimension does MiniLM produce","relevant":["d13","d14"]}
+{"id":"q09","query":"incremental import without duplicating documents","relevant":["d20"]}
+{"id":"q10","query":"join vector search results with relational SQL tables","relevant":["d24"]}
+{"id":"q11","query":"BM25 term frequency saturation and document length normalisation","relevant":["d07"]}
+{"id":"q12","query":"cache model weights so the second visit is fast","relevant":["d16","d15"]}
